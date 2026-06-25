@@ -1,0 +1,204 @@
+@page "/pos"
+@inject HttpClient Http
+
+<PageTitle>Punto de Venta</PageTitle>
+
+<div style="display:flex; gap:1rem; flex-wrap:wrap; padding:.5rem;">
+    <div style="flex:2; min-width:300px;">
+        <h2>🛒 Nueva venta</h2>
+        <input @bind="busqueda" @bind:event="oninput" @onkeyup="Buscar"
+               placeholder="Buscar producto..."
+               style="width:100%; padding:.6rem; font-size:1rem; border:1px solid #ddd; border-radius:8px; margin-bottom:.5rem;" />
+
+        @if (resultados.Any())
+        {
+            <div style="border:1px solid #eee; border-radius:8px; margin-bottom:1rem; max-height:200px; overflow-y:auto;">
+                @foreach (var p in resultados)
+                {
+                    <div @onclick="() => Agregar(p)"
+                         style="padding:.6rem 1rem; cursor:pointer; display:flex; justify-content:space-between; border-bottom:1px solid #f5f5f5;">
+                        <div>
+                            <strong>@p.Nombre</strong>
+                            <span style="background:#e8f0fe; color:#1a73e8; padding:1px 6px; border-radius:8px; font-size:.8rem; margin-left:6px;">@p.Talla</span>
+                            <span style="color:#888; font-size:.8rem; margin-left:8px;">Stock: @p.Stock</span>
+                        </div>
+                        <strong style="color:#2e7d32;">S/ @p.PrecioVenta.ToString("F2")</strong>
+                    </div>
+                }
+            </div>
+        }
+
+        <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="padding:.5rem; text-align:left;">Producto</th>
+                    <th style="padding:.5rem; text-align:center;">Cant.</th>
+                    <th style="padding:.5rem; text-align:right;">Precio</th>
+                    <th style="padding:.5rem; text-align:right;">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in carrito)
+                {
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:.5rem;"><strong>@item.Nombre</strong> <small style="color:#888;">@item.Talla</small></td>
+                        <td style="padding:.5rem; text-align:center;">
+                            <input type="number" @bind="item.Cantidad" min="1"
+                                   style="width:55px; padding:.3rem; border:1px solid #ddd; border-radius:4px; text-align:center;" />
+                        </td>
+                        <td style="padding:.5rem; text-align:right;">S/ @item.Precio.ToString("F2")</td>
+                        <td style="padding:.5rem; text-align:right; font-weight:bold;">S/ @((item.Cantidad * item.Precio).ToString("F2"))</td>
+                        <td><button @onclick="() => carrito.Remove(item)" style="background:none; border:none; color:#e53935; cursor:pointer; font-size:1.1rem;">✕</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!carrito.Any())
+        {
+            <p style="text-align:center; color:#aaa; padding:2rem;">Busca productos arriba o usa los accesos rápidos</p>
+        }
+    </div>
+
+    <div style="flex:1; min-width:260px;">
+        <div style="background:#fafafa; border:1px solid #eee; border-radius:12px; padding:1.2rem;">
+            <h3 style="margin:0 0 1rem;">Resumen</h3>
+
+            <div style="margin-bottom:.8rem;">
+                <label style="font-size:.85rem; color:#555;">Cliente (opcional)</label>
+                <input @bind="cliente" placeholder="Nombre del cliente"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+
+            <div style="margin-bottom:.8rem;">
+                <label style="font-size:.85rem; color:#555;">Método de pago</label>
+                <select @bind="metodoPago" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;">
+                    <option>Efectivo</option>
+                    <option>Yape</option>
+                    <option>Plin</option>
+                    <option>Tarjeta</option>
+                    <option>Transferencia</option>
+                </select>
+            </div>
+
+            <div style="border-top:1px solid #eee; padding-top:.8rem; margin-bottom:1rem;">
+                <div style="display:flex; justify-content:space-between; font-size:1.3rem; font-weight:bold;">
+                    <span>TOTAL</span>
+                    <span style="color:#2e7d32;">S/ @Total.ToString("F2")</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensajeExito))
+            {
+                <div style="background:#e8f5e9; color:#2e7d32; padding:.7rem; border-radius:6px; margin-bottom:.8rem;">✅ @mensajeExito</div>
+            }
+            @if (!string.IsNullOrEmpty(mensajeError))
+            {
+                <div style="background:#ffebee; color:#c62828; padding:.7rem; border-radius:6px; margin-bottom:.8rem;">⚠️ @mensajeError</div>
+            }
+
+            <button @onclick="Cobrar" disabled="@(!carrito.Any() || procesando)"
+                    style="width:100%; padding:1rem; background:#2e7d32; color:white; border:none; border-radius:8px; font-size:1.1rem; cursor:pointer; margin-bottom:.5rem;">
+                @(procesando ? "Procesando..." : $"💰 Cobrar S/ {Total:F2}")
+            </button>
+            <button @onclick="Limpiar" style="width:100%; padding:.6rem; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer;">
+                🗑️ Limpiar
+            </button>
+
+            <hr style="margin:1rem 0;" />
+            <h4 style="margin:0 0 .5rem;">Accesos rápidos</h4>
+            @foreach (var p in todosProductos.Take(8))
+            {
+                <div @onclick="() => Agregar(p)"
+                     style="padding:.4rem .7rem; margin-bottom:.3rem; background:white; border:1px solid #eee; border-radius:8px; cursor:pointer; display:flex; justify-content:space-between; font-size:.85rem;">
+                    <span>@p.Nombre @p.Talla</span>
+                    <span style="color:#2e7d32; font-weight:bold;">S/ @p.PrecioVenta.ToString("F2")</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    string apiUrl = "http://localhost:5102";
+    string busqueda = "";
+    string cliente = "";
+    string metodoPago = "Efectivo";
+    bool procesando = false;
+    string mensajeExito = "";
+    string mensajeError = "";
+    List<ProductoApi> todosProductos = new();
+    List<ProductoApi> resultados = new();
+    List<ItemCarrito> carrito = new();
+    decimal Total => carrito.Sum(i => i.Cantidad * i.Precio);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { todosProductos = await Http.GetFromJsonAsync<List<ProductoApi>>($"{apiUrl}/api/Productos") ?? new(); }
+        catch { }
+    }
+
+    void Buscar()
+    {
+        if (busqueda.Length < 2) { resultados.Clear(); return; }
+        resultados = todosProductos.Where(p =>
+            p.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
+            p.Talla.Contains(busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    void Agregar(ProductoApi p)
+    {
+        var existe = carrito.FirstOrDefault(i => i.ProductoId == p.Id);
+        if (existe != null) existe.Cantidad++;
+        else carrito.Add(new() { ProductoId = p.Id, Nombre = p.Nombre, Talla = p.Talla, Precio = p.PrecioVenta, Cantidad = 1 });
+        busqueda = ""; resultados.Clear(); mensajeExito = ""; mensajeError = "";
+    }
+
+    async Task Cobrar()
+    {
+        procesando = true; mensajeError = ""; mensajeExito = "";
+        try
+        {
+            var dto = new
+            {
+                ClienteNombre = string.IsNullOrEmpty(cliente) ? "Cliente general" : cliente,
+                MetodoPago = metodoPago,
+                Total = Total,
+                Items = carrito.Select(i => new { ProductoId = i.ProductoId, Cantidad = i.Cantidad, PrecioUnitario = i.Precio }).ToList()
+            };
+            var resp = await Http.PostAsJsonAsync($"{apiUrl}/api/Ventas", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                var totalGuardado = Total;
+                todosProductos = await Http.GetFromJsonAsync<List<ProductoApi>>($"{apiUrl}/api/Productos") ?? new();
+                carrito.Clear(); cliente = "";
+                mensajeExito = $"Venta guardada — Total: S/ {totalGuardado:F2}";
+            }
+            else mensajeError = "Error al registrar la venta";
+        }
+        catch (Exception ex) { mensajeError = $"Error: {ex.Message}"; }
+        procesando = false;
+    }
+
+    void Limpiar() { carrito.Clear(); cliente = ""; mensajeError = ""; mensajeExito = ""; }
+
+    class ProductoApi
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Talla { get; set; } = "";
+        public string Color { get; set; } = "";
+        public decimal PrecioVenta { get; set; }
+        public int Stock { get; set; }
+    }
+
+    class ItemCarrito
+    {
+        public int ProductoId { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Talla { get; set; } = "";
+        public decimal Precio { get; set; }
+        public int Cantidad { get; set; }
+    }
+}

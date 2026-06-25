@@ -1,0 +1,227 @@
+@page "/productos"
+@inject HttpClient Http
+
+<PageTitle>Productos — TiendaApp</PageTitle>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+    <h2 style="margin:0;">📦 Productos</h2>
+    <button @onclick="NuevoProducto"
+            style="padding:.6rem 1.2rem; background:#2e7d32; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem;">
+        + Agregar producto
+    </button>
+</div>
+
+<input @bind="busqueda" @bind:event="oninput" placeholder="Buscar producto..."
+       style="width:100%; padding:.6rem; font-size:1rem; border:1px solid #ddd; border-radius:8px; margin-bottom:1rem;" />
+
+@if (mostrarFormulario)
+{
+    <div style="background:#f0f7ff; border:1px solid #90caf9; border-radius:12px; padding:1.2rem; margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 1rem;">@(editandoId > 0 ? "Editar producto" : "Nuevo producto")</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.8rem; margin-bottom:1rem;">
+            <div>
+                <label style="font-size:.85rem; color:#555;">Nombre *</label>
+                <input @bind="fNombre" placeholder="Ej: Polo básico"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Categoría</label>
+                <select @bind="fCategoria" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;">
+                    <option>Polos</option>
+                    <option>Pantalones</option>
+                    <option>Vestidos</option>
+                    <option>Accesorios</option>
+                    <option>Otro</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Talla</label>
+                <select @bind="fTalla" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;">
+                    <option>XS</option><option>S</option><option>M</option>
+                    <option>L</option><option>XL</option><option>XXL</option>
+                    <option>28</option><option>30</option><option>32</option><option>34</option>
+                    <option>Única</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Color</label>
+                <input @bind="fColor" placeholder="Ej: Blanco"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Precio compra (S/)</label>
+                <input type="number" @bind="fPrecioCompra" min="0"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Precio venta (S/)</label>
+                <input type="number" @bind="fPrecioVenta" min="0"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Stock</label>
+                <input type="number" @bind="fStock" min="0"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p style="color:#c62828; font-size:.9rem; margin-bottom:.5rem;">⚠️ @error</p>
+        }
+        <div style="display:flex; gap:.8rem;">
+            <button @onclick="Guardar"
+                    style="padding:.6rem 1.4rem; background:#2e7d32; color:white; border:none; border-radius:8px; cursor:pointer;">
+                💾 Guardar
+            </button>
+            <button @onclick="Cancelar"
+                    style="padding:.6rem 1.4rem; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+}
+
+@if (cargando)
+{
+    <p style="text-align:center; color:#888; padding:2rem;">Cargando productos...</p>
+}
+else
+{
+    <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+        <thead>
+            <tr style="background:#f5f5f5; text-align:left;">
+                <th style="padding:.6rem;">Producto</th>
+                <th style="padding:.6rem;">Categoría</th>
+                <th style="padding:.6rem;">Talla / Color</th>
+                <th style="padding:.6rem; text-align:center;">Stock</th>
+                <th style="padding:.6rem; text-align:right;">P. Compra</th>
+                <th style="padding:.6rem; text-align:right;">P. Venta</th>
+                <th style="padding:.6rem; text-align:right;">Ganancia</th>
+                <th style="padding:.6rem;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in ProductosFiltrados)
+            {
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:.6rem; font-weight:500;">@p.Nombre</td>
+                    <td style="padding:.6rem;">
+                        <span style="background:#e8f0fe; color:#1a73e8; padding:2px 8px; border-radius:10px; font-size:.8rem;">@p.Categoria</span>
+                    </td>
+                    <td style="padding:.6rem;">@p.Talla @(string.IsNullOrEmpty(p.Color) ? "" : $"· {p.Color}")</td>
+                    <td style="padding:.6rem; text-align:center;">
+                        <span style="@(p.Stock <= 2 ? "color:#c62828; font-weight:bold;" : "color:#2e7d32; font-weight:bold;")">
+                            @p.Stock @(p.Stock <= 2 ? "⚠️" : "")
+                        </span>
+                    </td>
+                    <td style="padding:.6rem; text-align:right;">S/ @p.PrecioCompra.ToString("F2")</td>
+                    <td style="padding:.6rem; text-align:right;">S/ @p.PrecioVenta.ToString("F2")</td>
+                    <td style="padding:.6rem; text-align:right; color:#2e7d32;">S/ @((p.PrecioVenta - p.PrecioCompra).ToString("F2"))</td>
+                    <td style="padding:.6rem;">
+                        <button @onclick="() => Editar(p)"
+                                style="background:none; border:1px solid #ddd; border-radius:6px; padding:3px 8px; cursor:pointer; margin-right:4px;">✏️</button>
+                        <button @onclick="() => Eliminar(p.Id)"
+                                style="background:none; border:1px solid #fca5a5; border-radius:6px; padding:3px 8px; cursor:pointer;">🗑️</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!ProductosFiltrados.Any())
+    {
+        <p style="text-align:center; color:#aaa; padding:2rem;">
+            @(productos.Any() ? "No se encontraron productos" : "Sin productos. Agrega el primero.")
+        </p>
+    }
+
+    <div style="margin-top:1rem; color:#888; font-size:.85rem;">
+        @ProductosFiltrados.Count() productos · Stock total: @ProductosFiltrados.Sum(p => p.Stock) unidades
+    </div>
+}
+
+@code {
+    string apiUrl = "http://localhost:5102";
+    List<ProductoApi> productos = new();
+    string busqueda = "";
+    bool mostrarFormulario = false;
+    bool cargando = true;
+    string error = "";
+    int editandoId = 0;
+
+    string fNombre = ""; string fCategoria = "Polos"; string fTalla = "M";
+    string fColor = ""; decimal fPrecioCompra = 0; decimal fPrecioVenta = 0; int fStock = 0;
+
+    IEnumerable<ProductoApi> ProductosFiltrados => productos
+        .Where(p => string.IsNullOrEmpty(busqueda) ||
+                    p.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
+                    p.Categoria.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(p => p.Nombre);
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    async Task Cargar()
+    {
+        cargando = true;
+        try { productos = await Http.GetFromJsonAsync<List<ProductoApi>>($"{apiUrl}/api/Productos") ?? new(); }
+        catch { productos = new(); }
+        cargando = false;
+    }
+
+    void NuevoProducto()
+    {
+        editandoId = 0; fNombre = ""; fCategoria = "Polos"; fTalla = "M";
+        fColor = ""; fPrecioCompra = 0; fPrecioVenta = 0; fStock = 0;
+        error = ""; mostrarFormulario = true;
+    }
+
+    void Editar(ProductoApi p)
+    {
+        editandoId = p.Id; fNombre = p.Nombre; fCategoria = p.Categoria;
+        fTalla = p.Talla; fColor = p.Color; fPrecioCompra = p.PrecioCompra;
+        fPrecioVenta = p.PrecioVenta; fStock = p.Stock;
+        error = ""; mostrarFormulario = true;
+    }
+
+    async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(fNombre)) { error = "El nombre es obligatorio"; return; }
+        if (fPrecioVenta <= 0) { error = "El precio de venta debe ser mayor a 0"; return; }
+
+        var p = new ProductoApi { Id=editandoId, Nombre=fNombre, Categoria=fCategoria,
+            Talla=fTalla, Color=fColor, PrecioCompra=fPrecioCompra, PrecioVenta=fPrecioVenta, Stock=fStock };
+
+        if (editandoId > 0)
+            await Http.PutAsJsonAsync($"{apiUrl}/api/Productos/{editandoId}", p);
+        else
+            await Http.PostAsJsonAsync($"{apiUrl}/api/Productos", p);
+
+        await Cargar();
+        Cancelar();
+    }
+
+    async Task Eliminar(int id)
+    {
+        await Http.DeleteAsync($"{apiUrl}/api/Productos/{id}");
+        await Cargar();
+    }
+
+    void Cancelar()
+    {
+        mostrarFormulario = false; error = "";
+        fNombre = ""; fCategoria = "Polos"; fTalla = "M";
+        fColor = ""; fPrecioCompra = 0; fPrecioVenta = 0; fStock = 0;
+    }
+
+    class ProductoApi
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public string Talla { get; set; } = "";
+        public string Color { get; set; } = "";
+        public decimal PrecioCompra { get; set; }
+        public decimal PrecioVenta { get; set; }
+        public int Stock { get; set; }
+    }
+}

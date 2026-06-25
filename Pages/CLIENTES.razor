@@ -1,0 +1,293 @@
+@page "/clientes"
+
+<PageTitle>Clientes — TiendaApp</PageTitle>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+    <h2 style="margin:0;">👥 Clientes</h2>
+    <button @onclick="NuevoCliente"
+            style="padding:.6rem 1.2rem; background:#6a1b9a; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem;">
+        + Agregar cliente
+    </button>
+</div>
+
+<input @bind="busqueda" @bind:event="oninput" placeholder="Buscar por nombre, teléfono o DNI..."
+       style="width:100%; padding:.6rem; font-size:1rem; border:1px solid #ddd; border-radius:8px; margin-bottom:1rem;" />
+
+@if (mostrarFormulario)
+{
+    <div style="background:#f9f0ff; border:1px solid #ce93d8; border-radius:12px; padding:1.2rem; margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 1rem;">@(editando ? "Editar cliente" : "Nuevo cliente")</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.8rem; margin-bottom:1rem;">
+            <div>
+                <label style="font-size:.85rem; color:#555;">Nombre completo *</label>
+                <input @bind="formNombre" placeholder="Ej: María García"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Teléfono</label>
+                <input @bind="formTelefono" placeholder="Ej: 987654321"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">DNI</label>
+                <input @bind="formDNI" placeholder="Ej: 12345678"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Email</label>
+                <input @bind="formEmail" placeholder="Ej: maria@gmail.com"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+            <div>
+                <label style="font-size:.85rem; color:#555;">Notas</label>
+                <input @bind="formNotas" placeholder="Ej: Cliente frecuente"
+                       style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:6px; margin-top:.3rem;" />
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(errorForm))
+        {
+            <p style="color:#c62828; font-size:.9rem; margin-bottom:.5rem;">⚠️ @errorForm</p>
+        }
+        <div style="display:flex; gap:.8rem;">
+            <button @onclick="Guardar"
+                    style="padding:.6rem 1.4rem; background:#6a1b9a; color:white; border:none; border-radius:8px; cursor:pointer;">
+                💾 Guardar
+            </button>
+            <button @onclick="Cancelar"
+                    style="padding:.6rem 1.4rem; background:none; border:1px solid #ddd; border-radius:8px; cursor:pointer;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+}
+
+@if (clienteSeleccionado is not null)
+{
+    <div style="background:#fafafa; border:1px solid #eee; border-radius:12px; padding:1.2rem; margin-bottom:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="margin:0;">📋 Historial — @clienteSeleccionado.Nombre</h3>
+            <button @onclick="() => clienteSeleccionado = null"
+                    style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#888;">✕</button>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.8rem; margin-bottom:1rem;">
+            <div style="background:white; border:1px solid #eee; border-radius:8px; padding:.8rem; text-align:center;">
+                <div style="font-size:.8rem; color:#888;">Total comprado</div>
+                <div style="font-size:1.4rem; font-weight:bold; color:#2e7d32;">S/ @clienteSeleccionado.TotalComprado.ToString("N2")</div>
+            </div>
+            <div style="background:white; border:1px solid #eee; border-radius:8px; padding:.8rem; text-align:center;">
+                <div style="font-size:.8rem; color:#888;">Visitas</div>
+                <div style="font-size:1.4rem; font-weight:bold; color:#1565c0;">@clienteSeleccionado.Compras.Count</div>
+            </div>
+            <div style="background:white; border:1px solid #eee; border-radius:8px; padding:.8rem; text-align:center;">
+                <div style="font-size:.8rem; color:#888;">Última visita</div>
+                <div style="font-size:1rem; font-weight:bold;">@(clienteSeleccionado.Compras.Any() ? clienteSeleccionado.Compras.Max(c => c.Fecha).ToString("dd/MM/yyyy") : "-")</div>
+            </div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="padding:.5rem; text-align:left;">Fecha</th>
+                    <th style="padding:.5rem; text-align:left;">Productos</th>
+                    <th style="padding:.5rem; text-align:left;">Pago</th>
+                    <th style="padding:.5rem; text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in clienteSeleccionado.Compras.OrderByDescending(x => x.Fecha))
+                {
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:.5rem;">@c.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="padding:.5rem;">@c.Productos</td>
+                        <td style="padding:.5rem;">
+                            <span style="background:#e8eaf6; color:#3949ab; padding:2px 8px; border-radius:10px; font-size:.8rem;">@c.Pago</span>
+                        </td>
+                        <td style="padding:.5rem; text-align:right; font-weight:bold;">S/ @c.Total.ToString("F2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem;">
+    @foreach (var c in ClientesFiltrados)
+    {
+        <div style="background:white; border:1px solid #eee; border-radius:12px; padding:1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.8rem;">
+                <div style="display:flex; align-items:center; gap:.7rem;">
+                    <div style="background:#ede7f6; color:#6a1b9a; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem; flex-shrink:0;">
+                        @c.Nombre[0].ToString().ToUpper()
+                    </div>
+                    <div>
+                        <div style="font-weight:500; font-size:1rem;">@c.Nombre</div>
+                        @if (!string.IsNullOrEmpty(c.Telefono))
+                        {
+                            <div style="font-size:.82rem; color:#888;">📞 @c.Telefono</div>
+                        }
+                    </div>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button @onclick="() => Editar(c)"
+                            style="background:none; border:1px solid #ddd; border-radius:6px; padding:3px 7px; cursor:pointer;">✏️</button>
+                    <button @onclick="() => clientes.Remove(c)"
+                            style="background:none; border:1px solid #fca5a5; border-radius:6px; padding:3px 7px; cursor:pointer; color:#dc2626;">🗑️</button>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:.85rem; color:#555; margin-bottom:.8rem; flex-wrap:wrap; gap:.3rem;">
+                <span>💰 S/ @c.TotalComprado.ToString("N2")</span>
+                <span>🛍️ @c.Compras.Count visita(s)</span>
+            </div>
+            @if (!string.IsNullOrEmpty(c.Notas))
+            {
+                <div style="font-size:.82rem; color:#888; background:#f9f9f9; padding:.4rem .6rem; border-radius:6px; margin-bottom:.6rem;">
+                    📝 @c.Notas
+                </div>
+            }
+            <button @onclick="() => clienteSeleccionado = c"
+                    style="width:100%; padding:.4rem; background:none; border:1px solid #ce93d8; color:#6a1b9a; border-radius:8px; cursor:pointer; font-size:.85rem;">
+                Ver historial
+            </button>
+        </div>
+    }
+</div>
+
+@if (!ClientesFiltrados.Any())
+{
+    <p style="text-align:center; color:#aaa; padding:2rem;">
+        @(clientes.Any() ? "No se encontraron clientes" : "Sin clientes aún. Agrega el primero.")
+    </p>
+}
+
+<div style="margin-top:1rem; color:#888; font-size:.85rem;">
+    @ClientesFiltrados.Count() clientes registrados
+</div>
+
+@code {
+    string busqueda = "";
+    bool mostrarFormulario = false;
+    bool editando = false;
+    string errorForm = "";
+    int editandoId = 0;
+
+    string formNombre = "";
+    string formTelefono = "";
+    string formDNI = "";
+    string formEmail = "";
+    string formNotas = "";
+
+    ClienteItem? clienteSeleccionado = null;
+    List<ClienteItem> clientes = new();
+
+    IEnumerable<ClienteItem> ClientesFiltrados => clientes
+        .Where(c => string.IsNullOrEmpty(busqueda) ||
+                    c.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Telefono ?? "").Contains(busqueda) ||
+                    (c.DNI ?? "").Contains(busqueda))
+        .OrderByDescending(c => c.TotalComprado);
+
+    protected override void OnInitialized()
+    {
+        clientes = new()
+        {
+            new()
+            {
+                Id=1, Nombre="María García", Telefono="987654321", DNI="12345678",
+                Email="maria@gmail.com", Notas="Cliente frecuente",
+                Compras = new()
+                {
+                    new() { Fecha=DateTime.Now.AddDays(-2), Productos="Polo básico M, Vestido S", Pago="Yape", Total=110 },
+                    new() { Fecha=DateTime.Now.AddDays(-15), Productos="Jeans 28", Pago="Efectivo", Total=95 },
+                }
+            },
+            new()
+            {
+                Id=2, Nombre="Juan Pérez", Telefono="976543210", DNI="87654321",
+                Compras = new()
+                {
+                    new() { Fecha=DateTime.Now.AddDays(-5), Productos="Jeans 30, Polo L", Pago="Tarjeta", Total=130 },
+                }
+            },
+            new()
+            {
+                Id=3, Nombre="Ana Torres", Telefono="965432109", Notas="Prefiere talla S",
+                Compras = new()
+                {
+                    new() { Fecha=DateTime.Now.AddDays(-1), Productos="Vestido floral S", Pago="Yape", Total=75 },
+                    new() { Fecha=DateTime.Now.AddDays(-20), Productos="Polo básico S", Pago="Efectivo", Total=35 },
+                }
+            },
+        };
+    }
+
+    void NuevoCliente()
+    {
+        editando = false;
+        editandoId = 0;
+        formNombre = formTelefono = formDNI = formEmail = formNotas = "";
+        errorForm = "";
+        mostrarFormulario = true;
+    }
+
+    void Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(formNombre)) { errorForm = "El nombre es obligatorio"; return; }
+
+        if (editando)
+        {
+            var c = clientes.First(x => x.Id == editandoId);
+            c.Nombre = formNombre; c.Telefono = formTelefono;
+            c.DNI = formDNI; c.Email = formEmail; c.Notas = formNotas;
+        }
+        else
+        {
+            clientes.Add(new()
+            {
+                Id = clientes.Any() ? clientes.Max(x => x.Id) + 1 : 1,
+                Nombre = formNombre, Telefono = formTelefono,
+                DNI = formDNI, Email = formEmail, Notas = formNotas
+            });
+        }
+        Cancelar();
+    }
+
+    void Editar(ClienteItem c)
+    {
+        editandoId = c.Id;
+        formNombre = c.Nombre;
+        formTelefono = c.Telefono ?? "";
+        formDNI = c.DNI ?? "";
+        formEmail = c.Email ?? "";
+        formNotas = c.Notas ?? "";
+        editando = true;
+        mostrarFormulario = true;
+        errorForm = "";
+    }
+
+    void Cancelar()
+    {
+        mostrarFormulario = false;
+        editando = false;
+        errorForm = "";
+        formNombre = formTelefono = formDNI = formEmail = formNotas = "";
+    }
+
+    class ClienteItem
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = "";
+        public string? Telefono { get; set; }
+        public string? DNI { get; set; }
+        public string? Email { get; set; }
+        public string? Notas { get; set; }
+        public List<CompraItem> Compras { get; set; } = new();
+        public decimal TotalComprado => Compras.Sum(c => c.Total);
+    }
+
+    class CompraItem
+    {
+        public DateTime Fecha { get; set; }
+        public string Productos { get; set; } = "";
+        public string Pago { get; set; } = "";
+        public decimal Total { get; set; }
+    }
+}
