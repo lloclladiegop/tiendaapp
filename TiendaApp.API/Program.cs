@@ -1,10 +1,11 @@
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
 using TiendaApp.API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TiendaDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("TiendaDb")));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
