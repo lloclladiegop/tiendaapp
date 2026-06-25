@@ -1,4 +1,4 @@
-@TiendaApp.API_HostAddress = http://localhost:5102
+@TiendaApp.API_HostAddress = https://zucchini-unity-production-46f2.up.railway.app
 
 GET {{TiendaApp.API_HostAddress}}/weatherforecast/
 Accept: application/json

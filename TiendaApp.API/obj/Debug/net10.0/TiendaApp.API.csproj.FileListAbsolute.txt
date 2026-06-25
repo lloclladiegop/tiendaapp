@@ -159,3 +159,7 @@ C:\Proyectos\TiendaApp\TiendaApp.API\obj\Debug\net10.0\refint\TiendaApp.API.dll
 C:\Proyectos\TiendaApp\TiendaApp.API\obj\Debug\net10.0\TiendaApp.API.pdb
 C:\Proyectos\TiendaApp\TiendaApp.API\obj\Debug\net10.0\TiendaApp.API.genruntimeconfig.cache
 C:\Proyectos\TiendaApp\TiendaApp.API\obj\Debug\net10.0\ref\TiendaApp.API.dll
+C:\Proyectos\TiendaApp\TiendaApp.API\bin\Debug\net10.0\railway.json
+C:\Proyectos\TiendaApp\TiendaApp.API\bin\Debug\net10.0\Npgsql.dll
+C:\Proyectos\TiendaApp\TiendaApp.API\bin\Debug\net10.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Proyectos\TiendaApp\TiendaApp.API\obj\Debug\net10.0\TiendaApp.API.sourcelink.json

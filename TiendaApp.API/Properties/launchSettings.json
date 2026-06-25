@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5102",
+      "applicationUrl": "https://zucchini-unity-production-46f2.up.railway.app",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
