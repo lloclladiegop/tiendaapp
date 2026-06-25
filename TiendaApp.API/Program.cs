@@ -22,8 +22,8 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
+app.UseCors(); // ← primero
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseCors();
 app.MapControllers();
 app.Run();
